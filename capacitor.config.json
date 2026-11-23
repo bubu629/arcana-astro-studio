@@ -1,0 +1,6 @@
+{
+  "appId": "com.userstudio.arcanaastro",
+  "appName": "Arcana & Astro Studio",
+  "webDir": "www",
+  "bundledWebRuntime": false
+}

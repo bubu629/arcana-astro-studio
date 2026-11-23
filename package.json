@@ -1,0 +1,9 @@
+{
+  "name": "arcana-astro-studio",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Arcana & Astro Studio — 100% Offline 78-Card Tarot, Zodiac Horoscope & Synastry",
+  "scripts": {
+    "build": "echo 'Static web assets ready in www/'"
+  }
+}

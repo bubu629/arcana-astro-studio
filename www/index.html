@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Arcana & Astro Studio v1.0.0 — Offline Tarot, Zodiac & Natal Synastry</title>
+  <style>
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+      background: linear-gradient(135deg, #121926 0%, #1e3a5f 100%);
+      background-attachment: fixed;
+      color: #f8fafc;
+      margin: 0;
+      padding: 14px;
+      min-height: 100vh;
+    }
+    .container { max-width: 840px; margin: 0 auto; padding-bottom: 42px; }
+    .topbar {
+      display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;
+      border-bottom: 1px solid rgba(167, 139, 250, 0.35); padding-bottom: 12px; margin-bottom: 14px;
+    }
+    .brand { font-size: 18px; font-weight: 700; color: #e9d5ff; letter-spacing: 0.5px; }
+    .sub { font-size: 11.5px; color: #94a3b8; margin-top: 2px; }
+    .badge {
+      background: rgba(15, 23, 42, 0.9); border: 1px solid #a78bfa; color: #e9d5ff;
+      padding: 5px 11px; border-radius: 999px; font-size: 11.5px; font-weight: 600;
+    }
+    .cosmic-bar {
+      background: rgba(9, 15, 29, 0.85); border: 1px solid rgba(167, 139, 250, 0.28);
+      border-radius: 10px; padding: 9px 12px; margin-bottom: 12px; font-size: 12px; color: #cbd5e1; line-height: 1.55;
+    }
+    .tabs { display: flex; gap: 6px; margin-bottom: 14px; }
+    .tab-btn {
+      flex: 1; padding: 10px 6px; border-radius: 10px; border: 1px solid #2a3f5f;
+      background: rgba(11, 18, 34, 0.85); color: #94a3b8; font-weight: 600; font-size: 13px; cursor: pointer;
+    }
+    .tab-btn.active {
+      border-color: #a78bfa; color: #f3e8ff; background: rgba(49, 46, 129, 0.75);
+      box-shadow: 0 0 12px rgba(167, 139, 250, 0.22);
+    }
+    .card {
+      background: rgba(15, 23, 42, 0.92); border: 1px solid #2a3f5f;
+      border-radius: 12px; padding: 15px; margin-bottom: 14px;
+    }
+    .card h3 { margin: 0 0 10px 0; font-size: 15px; color: #e9d5ff; }
+    label { display: block; font-size: 12px; color: #94a3b8; margin-top: 10px; }
+    input, select {
+      width: 100%; background: #090f1d; border: 1px solid #334155; color: #fff;
+      padding: 10px; border-radius: 8px; margin-top: 4px; font-size: 13.5px;
+    }
+    .row { display: flex; gap: 8px; flex-wrap: wrap; }
+    .row > * { flex: 1; min-width: 130px; }
+    button {
+      background: #2563eb; color: #fff; border: none; padding: 11px 14px;
+      border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 13.5px;
+    }
+    .btn-mystic { background: linear-gradient(135deg, #6d28d9 0%, #9333ea 100%); color: #fff; }
+    .btn-gold { background: linear-gradient(135deg, #b8860b 0%, #d4af37 100%); color: #0f172a; }
+    .btn-green { background: #16a34a; }
+    .btn-slate { background: #334155; }
+    .panel { display: none; }
+    .panel.active { display: block; }
+
+    /* Tarot Cards Grid */
+    .tarot-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(215px, 1fr)); gap: 12px; margin: 14px 0; }
+    .t-card {
+      background: linear-gradient(160deg, #0b1120 0%, #172038 100%);
+      border: 1px solid rgba(167, 139, 250, 0.42); border-radius: 12px; padding: 12px;
+      position: relative; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+    }
+    .t-pos { font-size: 11px; text-transform: uppercase; letter-spacing: 0.8px; color: #a78bfa; font-weight: 700; }
+    .t-name { font-size: 15.5px; font-weight: 700; color: #f5d076; margin: 4px 0; }
+    .t-orient {
+      display: inline-block; padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; margin-bottom: 6px;
+    }
+    .orient-up { background: rgba(34, 197, 94, 0.16); color: #86efac; border: 1px solid rgba(34, 197, 94, 0.4); }
+    .orient-rev { background: rgba(244, 63, 94, 0.16); color: #fda4af; border: 1px solid rgba(244, 63, 94, 0.4); }
+    .t-meta { font-size: 11.5px; color: #94a3b8; margin-bottom: 6px; }
+    .t-kw { font-size: 12px; color: #c4b5fd; font-weight: 600; margin-bottom: 6px; }
+    .t-desc { font-size: 12.5px; color: #e2e8f0; line-height: 1.55; }
+
+    .tag {
+      display: inline-block; padding: 2px 8px; border-radius: 6px; font-size: 11.5px; font-weight: 700;
+      background: rgba(167, 139, 250, 0.18); color: #e9d5ff; border: 1px solid rgba(167, 139, 250, 0.45);
+    }
+    .offline-report {
+      background: #090f1d; border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 10px;
+      padding: 12px; margin-top: 10px; font-size: 13px; line-height: 1.7; color: #e2e8f0;
+    }
+    .offline-report h4 { margin: 0 0 6px 0; color: #38bdf8; font-size: 13.5px; }
+    .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 8px; margin-top: 8px; }
+    .mini-box { background: rgba(15, 23, 42, 0.9); border: 1px solid #2a3f5f; border-radius: 8px; padding: 9px; font-size: 12.5px; line-height: 1.55; }
+    .ai-box {
+      background: #070c18; border: 1px solid #a78bfa; border-radius: 10px;
+      padding: 13px; margin-top: 12px; font-size: 13.5px; line-height: 1.7; white-space: pre-wrap; color: #e2e8f0;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="topbar">
+      <div>
+        <div class="brand">🔮 Arcana & Astro Studio v1.0.0</div>
+        <div class="sub">100% Offline 78-Card Rider-Waite Tarot · Zodiac Horoscope · Natal & Synastry</div>
+      </div>
+      <div id="licenseBadge" class="badge">Full Offline Edition</div>
+    </div>
+
+    <div id="cosmicBar" class="cosmic-bar">⏳ Calculating today's Sun Sign, Lunar Phase & Cosmic Energy...</div>
+
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab('tarot', this)">🃏 Tarot Spreads</button>
+      <button class="tab-btn" onclick="switchTab('zodiac', this)">✨ Zodiac & Natal</button>
+      <button class="tab-btn" onclick="switchTab('synastry', this)">💞 Compatibility</button>
+      <button class="tab-btn" onclick="switchTab('settings', this)">⚙️ Settings / AI</button>
+    </div>
+
+    <!-- PANEL 1: TAROT SPREADS -->
+    <div id="panel-tarot" class="panel active">
+      <div class="card">
+        <h3>🃏 Rider-Waite 78-Card Tarot (Offline Full Deck + Upright & Reversed)</h3>
+        <label>Focus your intention or question (Love, Career, Decision, Guidance):</label>
+        <input type="text" id="tarotQuestion" placeholder="e.g., What should I focus on for my career growth over the next 3 months?" />
+        <div class="row">
+          <div>
+            <label>Choose Spread</label>
+            <select id="tarotSpread">
+              <option value="1">1-Card Daily Oracle (Instant Insight)</option>
+              <option value="3" selected>3-Card Spread (Past · Present · Future)</option>
+              <option value="5">5-Card Cross Spread (Situation · Obstacle · Advice · External · Outcome)</option>
+            </select>
+          </div>
+          <div>
+            <label>Deck Mode</label>
+            <select id="tarotDeckMode">
+              <option value="all">Full 78-Card Deck (Major + Minor Arcana)</option>
+              <option value="major">22 Major Arcana Only (Life Archetypes)</option>
+            </select>
+          </div>
+        </div>
+        <div class="row" style="margin-top:12px;">
+          <button class="btn-mystic" onclick="drawTarotSpread()">🔮 Shuffle & Draw Cards</button>
+          <button class="btn-slate" style="flex:0.5;" onclick="resetTarot()">↺ Clear</button>
+        </div>
+
+        <div id="tarotResult" style="display:none; margin-top:14px;">
+          <div class="tarot-grid" id="tarotCardsGrid"></div>
+          <div id="tarotSummary" class="offline-report"></div>
+          <button class="btn-slate" style="width:100%; margin-top:10px; border:1px solid #a78bfa;" onclick="runAiReading('tarot')">✨ (Optional Online) AI Tarot Reader Deep Synthesis</button>
+          <div id="tarotAiOut" class="ai-box" style="display:none;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PANEL 2: ZODIAC & NATAL PROFILE -->
+    <div id="panel-zodiac" class="panel">
+      <div class="card">
+        <h3>✨ Zodiac Horoscope, Ascendant & Life Path Numerology</h3>
+        <div class="row">
+          <div>
+            <label>Birth Date</label>
+            <input type="date" id="zodBirthDate" value="1994-08-18" />
+          </div>
+          <div>
+            <label>Birth Time (for Rising Sign estimate)</label>
+            <input type="time" id="zodBirthTime" value="08:30" />
+          </div>
+          <div>
+            <label>Life Focus</label>
+            <select id="zodFocus">
+              <option value="General">General & Cosmic Alignment</option>
+              <option value="Love">Love & Relationships</option>
+              <option value="Career">Career & Wealth</option>
+            </select>
+          </div>
+        </div>
+        <button class="btn-gold" style="width:100%; margin-top:12px;" onclick="computeZodiacProfile()">✨ Generate Offline Horoscope & Natal Blueprint</button>
+
+        <div id="zodResult" style="display:none; margin-top:14px;">
+          <div id="zodProfileOut" class="offline-report"></div>
+          <button class="btn-slate" style="width:100%; margin-top:10px; border:1px solid #a78bfa;" onclick="runAiReading('zodiac')">✨ (Optional Online) AI Astrologer Personalized Transit Reading</button>
+          <div id="zodAiOut" class="ai-box" style="display:none;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PANEL 3: SYNASTRY / COMPATIBILITY -->
+    <div id="panel-synastry" class="panel">
+      <div class="card">
+        <h3>💞 Zodiac Element & Modality Synastry (Relationship & Partnership)</h3>
+        <div class="row">
+          <div>
+            <label>Person A Birth Date</label>
+            <input type="date" id="synDateA" value="1994-08-18" />
+          </div>
+          <div>
+            <label>Person B Birth Date</label>
+            <input type="date" id="synDateB" value="1996-03-29" />
+          </div>
+          <div>
+            <label>Bond Type</label>
+            <select id="synType">
+              <option value="Romantic Relationship">Romantic Relationship</option>
+              <option value="Business Partnership">Business Partnership</option>
+              <option value="Friendship">Friendship</option>
+            </select>
+          </div>
+        </div>
+        <button class="btn-mystic" style="width:100%; margin-top:12px;" onclick="computeSynastry()">💞 Analyze Offline Compatibility</button>
+
+        <div id="synResult" style="display:none; margin-top:14px;">
+          <div id="synOut" class="offline-report"></div>
+          <button class="btn-slate" style="width:100%; margin-top:10px; border:1px solid #a78bfa;" onclick="runAiReading('synastry')">✨ (Optional Online) AI Synastry Deep Relationship Guidance</button>
+          <div id="synAiOut" class="ai-box" style="display:none;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PANEL 4: SETTINGS & LICENSE -->
+    <div id="panel-settings" class="panel">
+      <div class="card">
+        <h3>🤖 (Optional) Gemini AI Reader Key</h3>
+        <label>Works 100% offline without any key. Add a Gemini API Key (AQ. or AIza prefix) to enable AI custom synthesis with automatic multi-model 429 fallback:</label>
+        <input type="password" id="aiApiKey" placeholder="Paste AQ.Ab... or AIza..." />
+        <button class="btn-green" style="width:100%; margin-top:10px;" onclick="saveApiKey()">💾 Save API Key</button>
+      </div>
+
+      <div class="card">
+        <h3>🔑 Lifetime Pro License Key (ARC1.xxx)</h3>
+        <input type="text" id="licInput" placeholder="Paste ARC1.xxx lifetime unlock code..." />
+        <button class="btn-gold" style="width:100%; margin-top:10px;" onclick="activateLicense()">Activate Lifetime Pro</button>
+      </div>
+
+      <div class="card">
+        <h3>🛠️ Offline Engine & Diagnostic Log</h3>
+        <div id="logBox" style="height:120px; overflow-y:auto; background:#030712; padding:8px; border-radius:6px; font-family:monospace; font-size:11px; color:#c4b5fd;"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const STORAGE_KEY_API = "arcana_astro_gemini_key_v1";
+    const STORAGE_KEY_LIC = "arcana_astro_license_v1";
+
+    const TAROT_DECK = [{"id": "0", "name": "The Fool", "arcana": "Major Arcana", "element": "Air", "up_kw": "New beginnings, leap of faith, spontaneity, freedom", "rev_kw": "Recklessness, hesitation, fear of unknown, naivety", "up_desc": "A fresh chapter opens before you. Trust your intuition and take that bold first step without overthinking.", "rev_desc": "Pause before leaping blindly. Check hidden risks and avoid impulsive decisions right now.", "love": "Embrace open-hearted curiosity; let romance unfold naturally without rigid expectations.", "career": "Ideal moment for a bold pivot, startup idea, or unexplored career path."}, {"id": "I", "name": "The Magician", "arcana": "Major Arcana", "element": "Air", "up_kw": "Manifestation, willpower, skill, resourcefulness", "rev_kw": "Manipulation, scattered energy, untapped potential", "up_desc": "You already hold every tool needed to turn vision into reality. Focus your intent and take decisive action.", "rev_desc": "Your energy is fragmented or someone around you is not being fully transparent. Re-center your focus.", "love": "Take the initiative to express your feelings clearly; magnetic attraction is on your side.", "career": "Pitch your ideas, negotiate confidently, and leverage your sharpest skills."}, {"id": "II", "name": "The High Priestess", "arcana": "Major Arcana", "element": "Water", "up_kw": "Intuition, mystery, inner wisdom, stillness", "rev_kw": "Secrets revealed, ignoring gut feelings, surface noise", "up_desc": "Look beneath the surface. Quiet reflection and your inner voice hold the answers logic cannot yet see.", "rev_desc": "You are tuning out your intuition or missing unspoken truths. Slow down and listen closely.", "love": "Deep emotional and spiritual connection; trust what is felt rather than merely spoken.", "career": "Observe office dynamics quietly before making your next strategic move."}, {"id": "III", "name": "The Empress", "arcana": "Major Arcana", "element": "Earth", "up_kw": "Abundance, creativity, nurturing, fertility", "rev_kw": "Creative block, smothering, neglecting self-care", "up_desc": "A fertile season of growth, beauty, and material comfort. Nurture your projects and enjoy the harvest.", "rev_desc": "Replenish your own energy first; overgiving has left your creative well running dry.", "love": "Warmth, sensuality, and deep affection flourish; a supportive and loving bond.", "career": "Creative ventures, branding, and collaborative projects thrive under your care."}, {"id": "IV", "name": "The Emperor", "arcana": "Major Arcana", "element": "Fire", "up_kw": "Authority, structure, stability, leadership", "rev_kw": "Rigidity, control issues, tyranny, lack of discipline", "up_desc": "Establish clear boundaries, order, and long-term strategy. Disciplined leadership brings lasting security.", "rev_desc": "Excessive stubbornness or micromanagement creates friction. Balance firmness with flexibility.", "love": "Seek reliability and mutual respect; clear commitments strengthen the relationship.", "career": "Step into a leadership role, organize systems, and build solid foundations."}, {"id": "V", "name": "The Hierophant", "arcana": "Major Arcana", "element": "Earth", "up_kw": "Tradition, mentorship, shared values, institutions", "rev_kw": "Rebellion, breaking conventions, questioning dogma", "up_desc": "Seek guidance from proven wisdom, mentors, or structured learning to anchor your next step.", "rev_desc": "Forge your own path rather than conforming to outdated expectations that no longer fit.", "love": "Traditional milestones, shared beliefs, and long-term commitment come into focus.", "career": "Mentorship, certification, or aligning with an established organization brings progress."}, {"id": "VI", "name": "The Lovers", "arcana": "Major Arcana", "element": "Air", "up_kw": "Harmony, alignment, meaningful choice, partnership", "rev_kw": "Disharmony, misalignment, indecision, temptation", "up_desc": "A pivotal choice calls you to align with your deepest values. Union and heartfelt connection prevail.", "rev_desc": "Inner conflict or unbalanced priorities cloud a decision. Reconnect with your core values first.", "love": "Soul-level resonance, open communication, and a defining choice in love.", "career": "Form a strategic partnership or choose the work that truly aligns with your passion."}, {"id": "VII", "name": "The Chariot", "arcana": "Major Arcana", "element": "Water", "up_kw": "Victory, determination, momentum, self-control", "rev_kw": "Lack of direction, stalled momentum, aggression", "up_desc": "Harness opposing forces through sheer focus and willpower. Forward momentum carries you to triumph.", "rev_desc": "You are pulling in too many directions at once. Regain control of the reins before accelerating.", "love": "Pursue what your heart wants with confidence while respecting emotional boundaries.", "career": "Drive your project across the finish line; decisive action beats hesitation."}, {"id": "VIII", "name": "Strength", "arcana": "Major Arcana", "element": "Fire", "up_kw": "Courage, inner resilience, compassion, patience", "rev_kw": "Self-doubt, raw emotion, insecurity, burnout", "up_desc": "True power comes from calm composure and gentle persistence rather than brute force.", "rev_desc": "Be kind to yourself during moments of vulnerability; rebuild confidence step by step.", "love": "Patience, empathy, and quiet reassurance deepen trust between partners.", "career": "Handle high-pressure negotiations with grace, poise, and steady resolve."}, {"id": "IX", "name": "The Hermit", "arcana": "Major Arcana", "element": "Earth", "up_kw": "Introspection, solitude, inner guidance, truth", "rev_kw": "Isolation, loneliness, withdrawing too far", "up_desc": "Step back from the noise to seek clarity within. Solitude illuminates the path forward.", "rev_desc": "Do not let healthy reflection turn into avoidance. Re-engage with trusted allies when ready.", "love": "Take quiet time to understand what you genuinely need from a relationship.", "career": "Deep research, solo strategy work, and thoughtful auditing pay off now."}, {"id": "X", "name": "Wheel of Fortune", "arcana": "Major Arcana", "element": "Fire", "up_kw": "Turning point, destiny, cycles, good fortune", "rev_kw": "Setbacks, resistance to change, bad timing", "up_desc": "A major cycle shifts in your favor. Stay adaptable and ride the wave of unexpected opportunity.", "rev_desc": "Temporary delays remind you to focus on what you can control while the wheel turns.", "love": "Fateful encounters or a sudden positive shift in relationship dynamics.", "career": "Stay agile—market shifts or new openings can elevate your trajectory quickly."}, {"id": "XI", "name": "Justice", "arcana": "Major Arcana", "element": "Air", "up_kw": "Fairness, truth, accountability, cause and effect", "rev_kw": "Unfairness, avoiding accountability, bias", "up_desc": "Truth comes to light and balanced decisions prevail. Every action meets its fair consequence.", "rev_desc": "Look closely at contracts, hidden biases, or unbalanced give-and-take before signing.", "love": "Honesty, mutual accountability, and clear communication restore equilibrium.", "career": "Legal matters, contracts, and performance reviews resolve fairly when documented."}, {"id": "XII", "name": "The Hanged Man", "arcana": "Major Arcana", "element": "Water", "up_kw": "Surrender, new perspective, pause, release", "rev_kw": "Stalling, resistance, martyrdom, indecision", "up_desc": "A deliberate pause unlocks a breakthrough shift in perspective. Let go of forcing the outcome.", "rev_desc": "You are resisting an inevitable change and draining energy. Release control to move forward.", "love": "View your partner's needs from a fresh angle; patience transforms stagnation.", "career": "Step back from a dead-end tactic; reframing the problem reveals a clever solution."}, {"id": "XIII", "name": "Death", "arcana": "Major Arcana", "element": "Water", "up_kw": "Transformation, ending, rebirth, closure", "rev_kw": "Clinging to the past, fear of change, stagnation", "up_desc": "One chapter closes completely so a far more authentic beginning can emerge. Embrace transformation.", "rev_desc": "Holding onto what has already ended delays your renewal. Release what no longer serves you.", "love": "A profound relationship evolution—shedding old patterns for genuine renewal.", "career": "Transition out of an outdated role or business model to make room for growth."}, {"id": "XIV", "name": "Temperance", "arcana": "Major Arcana", "element": "Fire", "up_kw": "Balance, moderation, alchemy, healing patience", "rev_kw": "Excess, imbalance, impatience, clashing extremes", "up_desc": "Blend opposing elements with patience and grace. Steady middle-way progress brings lasting healing.", "rev_desc": "Extremes are throwing you off center. Restore daily rhythm and dial back overextension.", "love": "Harmonious compromise, emotional healing, and effortless flow together.", "career": "Integrate diverse skills or bridge two teams to create a winning synthesis."}, {"id": "XV", "name": "The Devil", "arcana": "Major Arcana", "element": "Earth", "up_kw": "Shadow patterns, attachment, materialism, temptation", "rev_kw": "Breaking free, release, reclaiming power, clarity", "up_desc": "Examine what habits, fears, or unhealthy attachments hold invisible leverage over your choices.", "rev_desc": "Chains are loosening—you recognize the trap and are ready to reclaim your independence.", "love": "Beware of codependency, obsession, or mistaking intensity for true intimacy.", "career": "Watch out for golden handcuffs, toxic workloads, or short-term greed."}, {"id": "XVI", "name": "The Tower", "arcana": "Major Arcana", "element": "Fire", "up_kw": "Sudden upheaval, revelation, awakening, breakthrough", "rev_kw": "Averted disaster, fear of collapse, delayed change", "up_desc": "A sudden shake-up clears away unstable foundations so truth and strength can stand.", "rev_desc": "Resisting necessary disruption only prolongs tension. Rebuild proactively on honest ground.", "love": "A candid truth shakes the status quo, paving the way for radical honesty.", "career": "Prepare contingency plans; sudden market or organizational shifts demand agility."}, {"id": "XVII", "name": "The Star", "arcana": "Major Arcana", "element": "Air", "up_kw": "Hope, renewal, inspiration, serenity", "rev_kw": "Discouragement, disconnection, lack of faith", "up_desc": "Calm waters return after the storm. Inspiration, healing, and renewed optimism guide your horizon.", "rev_desc": "Reconnect with your sense of purpose; small acts of self-care rekindle your inner spark.", "love": "Healing, vulnerability, and bright optimism renew faith in love.", "career": "Creative inspiration flows freely; share your authentic vision with the world."}, {"id": "XVIII", "name": "The Moon", "arcana": "Major Arcana", "element": "Water", "up_kw": "Illusion, subconscious, dreams, uncertainty", "rev_kw": "Clarity emerging, release of fear, truth uncovered", "up_desc": "Not everything is as it appears in the shadows. Navigate uncertainty through intuition rather than fear.", "rev_desc": "Fog begins to lift; hidden motives or anxieties become clear enough to resolve.", "love": "Avoid projecting past fears onto your partner; ask gently for clarity.", "career": "Double-check assumptions and fine print before committing resources."}, {"id": "XIX", "name": "The Sun", "arcana": "Major Arcana", "element": "Fire", "up_kw": "Joy, vitality, success, clarity, warmth", "rev_kw": "Temporary cloud, dimmed enthusiasm, overexposure", "up_desc": "Radiant success, clarity, and joyful vitality shine on your path. Step forward with confidence.", "rev_desc": "The warmth is still there behind passing clouds—reconnect with simple gratitude.", "love": "Happiness, openness, and celebratory milestones shared with loved ones.", "career": "High visibility, successful launches, and well-earned recognition."}, {"id": "XX", "name": "Judgement", "arcana": "Major Arcana", "element": "Fire", "up_kw": "Awakening, reckoning, renewal, higher calling", "rev_kw": "Self-doubt, ignoring the call, harsh self-judgment", "up_desc": "A defining moment of clarity and renewal calls you to rise into your next evolution.", "rev_desc": "Release past regrets and forgive yourself so you can answer what is calling you now.", "love": "An honest reckoning brings clarity on whether to deepen or release a bond.", "career": "Step up to a broader mission or long-overdue career reinvention."}, {"id": "XXI", "name": "The World", "arcana": "Major Arcana", "element": "Earth", "up_kw": "Completion, fulfillment, integration, wholeness", "rev_kw": "Incomplete closure, loose ends, shortcutting", "up_desc": "A major cycle reaches triumphant completion. Celebrate your mastery before the next journey begins.", "rev_desc": "Tie up remaining loose ends so you can claim full closure and step forward cleanly.", "love": "Deep fulfillment, shared milestones, or embarking on a global adventure together.", "career": "Successful project completion, international reach, and holistic achievement."}, {"id": "22", "name": "Ace of Wands", "arcana": "Minor Arcana · Wands", "element": "Fire", "up_kw": "pure potential, fresh spark, new opportunity", "rev_kw": "blocked start, missed chance, hesitation", "up_desc": "A potent new seed of passion, action, creativity, enterprise arrives ready for you to cultivate.", "rev_desc": "Delays or internal resistance hold back a promising new beginning in passion, action, creativity, enterprise.", "love": "In love, Ace of Wands highlights passion, action, creativity, enterprise—stay authentic and communicative.", "career": "In career & finances, Ace of Wands emphasizes passion, action, creativity, enterprise—act with clarity."}, {"id": "23", "name": "Two of Wands", "arcana": "Minor Arcana · Wands", "element": "Fire", "up_kw": "balance, partnership, planning, dual choice", "rev_kw": "indecision, imbalance, stalled alignment", "up_desc": "Weighing options carefully and aligning perspectives around passion, action, creativity, enterprise.", "rev_desc": "Crossed signals or hesitation create friction when coordinating passion, action, creativity, enterprise.", "love": "In love, Two of Wands highlights passion, action, creativity, enterprise—stay authentic and communicative.", "career": "In career & finances, Two of Wands emphasizes passion, action, creativity, enterprise—act with clarity."}, {"id": "24", "name": "Three of Wands", "arcana": "Minor Arcana · Wands", "element": "Fire", "up_kw": "expansion, collaboration, initial growth", "rev_kw": "delays, misalignment, solo strain", "up_desc": "Early efforts in passion, action, creativity, enterprise expand through teamwork and shared momentum.", "rev_desc": "Progress slows due to scattered coordination; realign expectations in passion, action, creativity, enterprise.", "love": "In love, Three of Wands highlights passion, action, creativity, enterprise—stay authentic and communicative.", "career": "In career & finances, Three of Wands emphasizes passion, action, creativity, enterprise—act with clarity."}, {"id": "25", "name": "Four of Wands", "arcana": "Minor Arcana · Wands", "element": "Fire", "up_kw": "stability, foundation, rest, consolidation", "rev_kw": "stagnation, restlessness, rigid comfort", "up_desc": "A solid milestone of stability and security takes shape in passion, action, creativity, enterprise.", "rev_desc": "Playing it too safe risks stagnation; refresh your approach to passion, action, creativity, enterprise.", "love": "In love, Four of Wands highlights passion, action, creativity, enterprise—stay authentic and communicative.", "career": "In career & finances, Four of Wands emphasizes passion, action, creativity, enterprise—act with clarity."}, {"id": "26", "name": "Five of Wands", "arcana": "Minor Arcana · Wands", "element": "Fire", "up_kw": "friction, challenge, competition, growing pains", "rev_kw": "resolution, compromise, moving past conflict", "up_desc": "Constructive tension tests your resilience and sharpens your edge in passion, action, creativity, enterprise.", "rev_desc": "The worst of the friction eases as you choose peace and smarter strategy in passion, action, creativity, enterprise.", "love": "In love, Five of Wands highlights passion, action, creativity, enterprise—stay authentic and communicative.", "career": "In career & finances, Five of Wands emphasizes passion, action, creativity, enterprise—act with clarity."}, {"id": "27", "name": "Six of Wands", "arcana": "Minor Arcana · Wands", "element": "Fire", "up_kw": "harmony, recognition, progress, reciprocity", "rev_kw": "unbalanced giving, delayed praise, nostalgia", "up_desc": "Smooth forward movement, support, and welcome progress in passion, action, creativity, enterprise.", "rev_desc": "Check whether give-and-take feels lopsided as you navigate passion, action, creativity, enterprise.", "love": "In love, Six of Wands highlights passion, action, creativity, enterprise—stay authentic and communicative.", "career": "In career & finances, Six of Wands emphasizes passion, action, creativity, enterprise—act with clarity."}, {"id": "28", "name": "Seven of Wands", "arcana": "Minor Arcana · Wands", "element": "Fire", "up_kw": "perseverance, assessment, defense, discernment", "rev_kw": "overwhelm, giving up too soon, scatter", "up_desc": "Hold your ground and evaluate strategically to protect your gains in passion, action, creativity, enterprise.", "rev_desc": "Drop unnecessary battles and focus only on what truly matters in passion, action, creativity, enterprise.", "love": "In love, Seven of Wands highlights passion, action, creativity, enterprise—stay authentic and communicative.", "career": "In career & finances, Seven of Wands emphasizes passion, action, creativity, enterprise—act with clarity."}, {"id": "29", "name": "Eight of Wands", "arcana": "Minor Arcana · Wands", "element": "Fire", "up_kw": "swift movement, mastery, momentum, dedication", "rev_kw": "haste, frustration, feeling trapped", "up_desc": "Rapid progress, focused skill-building, and decisive flow in passion, action, creativity, enterprise.", "rev_desc": "Slow down to avoid careless mistakes or spinning your wheels in passion, action, creativity, enterprise.", "love": "In love, Eight of Wands highlights passion, action, creativity, enterprise—stay authentic and communicative.", "career": "In career & finances, Eight of Wands emphasizes passion, action, creativity, enterprise—act with clarity."}, {"id": "30", "name": "Nine of Wands", "arcana": "Minor Arcana · Wands", "element": "Fire", "up_kw": "resilience, culmination, near-completion, vigilance", "rev_kw": "exhaustion, paranoia, letting guard slip", "up_desc": "You are close to the finish line—stay steady and protect what you built in passion, action, creativity, enterprise.", "rev_desc": "Fatigue sets in; rest, delegate, and release unnecessary worry around passion, action, creativity, enterprise.", "love": "In love, Nine of Wands highlights passion, action, creativity, enterprise—stay authentic and communicative.", "career": "In career & finances, Nine of Wands emphasizes passion, action, creativity, enterprise—act with clarity."}, {"id": "31", "name": "Ten of Wands", "arcana": "Minor Arcana · Wands", "element": "Fire", "up_kw": "fulfillment, legacy, completion, carrying weight", "rev_kw": "burnout, overextension, releasing burden", "up_desc": "A full cycle culminates with lasting impact and tangible weight in passion, action, creativity, enterprise.", "rev_desc": "You are carrying too much alone—delegate or put down excess baggage in passion, action, creativity, enterprise.", "love": "In love, Ten of Wands highlights passion, action, creativity, enterprise—stay authentic and communicative.", "career": "In career & finances, Ten of Wands emphasizes passion, action, creativity, enterprise—act with clarity."}, {"id": "32", "name": "Page of Wands", "arcana": "Minor Arcana · Wands", "element": "Fire", "up_kw": "curiosity, fresh message, student mindset, exploration", "rev_kw": "immaturity, scattered news, procrastination", "up_desc": "An intriguing message, fresh curiosity, or beginner's breakthrough in passion, action, creativity, enterprise.", "rev_desc": "Verify information carefully and turn idle curiosity into disciplined action in passion, action, creativity, enterprise.", "love": "In love, Page of Wands highlights passion, action, creativity, enterprise—stay authentic and communicative.", "career": "In career & finances, Page of Wands emphasizes passion, action, creativity, enterprise—act with clarity."}, {"id": "33", "name": "Knight of Wands", "arcana": "Minor Arcana · Wands", "element": "Fire", "up_kw": "bold pursuit, momentum, adventure, commitment", "rev_kw": "impulsiveness, recklessness, stalled drive", "up_desc": "Passionate forward drive and committed action propel you through passion, action, creativity, enterprise.", "rev_desc": "Channel restless energy wisely instead of rushing headlong into passion, action, creativity, enterprise.", "love": "In love, Knight of Wands highlights passion, action, creativity, enterprise—stay authentic and communicative.", "career": "In career & finances, Knight of Wands emphasizes passion, action, creativity, enterprise—act with clarity."}, {"id": "34", "name": "Queen of Wands", "arcana": "Minor Arcana · Wands", "element": "Fire", "up_kw": "mastery, emotional intelligence, nurturing authority", "rev_kw": "insecurity, overcontrol, inward imbalance", "up_desc": "Mature grace, intuitive command, and steady magnetism elevate passion, action, creativity, enterprise.", "rev_desc": "Reclaim inner balance and self-assurance rather than overextending in passion, action, creativity, enterprise.", "love": "In love, Queen of Wands highlights passion, action, creativity, enterprise—stay authentic and communicative.", "career": "In career & finances, Queen of Wands emphasizes passion, action, creativity, enterprise—act with clarity."}, {"id": "35", "name": "King of Wands", "arcana": "Minor Arcana · Wands", "element": "Fire", "up_kw": "sovereign mastery, leadership, strategic command", "rev_kw": "domineering streak, rigidity, detached judgment", "up_desc": "Authoritative mastery, clear vision, and seasoned leadership govern passion, action, creativity, enterprise.", "rev_desc": "Lead with wisdom and fairness rather than rigid control in passion, action, creativity, enterprise.", "love": "In love, King of Wands highlights passion, action, creativity, enterprise—stay authentic and communicative.", "career": "In career & finances, King of Wands emphasizes passion, action, creativity, enterprise—act with clarity."}, {"id": "36", "name": "Ace of Cups", "arcana": "Minor Arcana · Cups", "element": "Water", "up_kw": "pure potential, fresh spark, new opportunity", "rev_kw": "blocked start, missed chance, hesitation", "up_desc": "A potent new seed of emotion, relationships, intuition, empathy arrives ready for you to cultivate.", "rev_desc": "Delays or internal resistance hold back a promising new beginning in emotion, relationships, intuition, empathy.", "love": "In love, Ace of Cups highlights emotion, relationships, intuition, empathy—stay authentic and communicative.", "career": "In career & finances, Ace of Cups emphasizes emotion, relationships, intuition, empathy—act with clarity."}, {"id": "37", "name": "Two of Cups", "arcana": "Minor Arcana · Cups", "element": "Water", "up_kw": "balance, partnership, planning, dual choice", "rev_kw": "indecision, imbalance, stalled alignment", "up_desc": "Weighing options carefully and aligning perspectives around emotion, relationships, intuition, empathy.", "rev_desc": "Crossed signals or hesitation create friction when coordinating emotion, relationships, intuition, empathy.", "love": "In love, Two of Cups highlights emotion, relationships, intuition, empathy—stay authentic and communicative.", "career": "In career & finances, Two of Cups emphasizes emotion, relationships, intuition, empathy—act with clarity."}, {"id": "38", "name": "Three of Cups", "arcana": "Minor Arcana · Cups", "element": "Water", "up_kw": "expansion, collaboration, initial growth", "rev_kw": "delays, misalignment, solo strain", "up_desc": "Early efforts in emotion, relationships, intuition, empathy expand through teamwork and shared momentum.", "rev_desc": "Progress slows due to scattered coordination; realign expectations in emotion, relationships, intuition, empathy.", "love": "In love, Three of Cups highlights emotion, relationships, intuition, empathy—stay authentic and communicative.", "career": "In career & finances, Three of Cups emphasizes emotion, relationships, intuition, empathy—act with clarity."}, {"id": "39", "name": "Four of Cups", "arcana": "Minor Arcana · Cups", "element": "Water", "up_kw": "stability, foundation, rest, consolidation", "rev_kw": "stagnation, restlessness, rigid comfort", "up_desc": "A solid milestone of stability and security takes shape in emotion, relationships, intuition, empathy.", "rev_desc": "Playing it too safe risks stagnation; refresh your approach to emotion, relationships, intuition, empathy.", "love": "In love, Four of Cups highlights emotion, relationships, intuition, empathy—stay authentic and communicative.", "career": "In career & finances, Four of Cups emphasizes emotion, relationships, intuition, empathy—act with clarity."}, {"id": "40", "name": "Five of Cups", "arcana": "Minor Arcana · Cups", "element": "Water", "up_kw": "friction, challenge, competition, growing pains", "rev_kw": "resolution, compromise, moving past conflict", "up_desc": "Constructive tension tests your resilience and sharpens your edge in emotion, relationships, intuition, empathy.", "rev_desc": "The worst of the friction eases as you choose peace and smarter strategy in emotion, relationships, intuition, empathy.", "love": "In love, Five of Cups highlights emotion, relationships, intuition, empathy—stay authentic and communicative.", "career": "In career & finances, Five of Cups emphasizes emotion, relationships, intuition, empathy—act with clarity."}, {"id": "41", "name": "Six of Cups", "arcana": "Minor Arcana · Cups", "element": "Water", "up_kw": "harmony, recognition, progress, reciprocity", "rev_kw": "unbalanced giving, delayed praise, nostalgia", "up_desc": "Smooth forward movement, support, and welcome progress in emotion, relationships, intuition, empathy.", "rev_desc": "Check whether give-and-take feels lopsided as you navigate emotion, relationships, intuition, empathy.", "love": "In love, Six of Cups highlights emotion, relationships, intuition, empathy—stay authentic and communicative.", "career": "In career & finances, Six of Cups emphasizes emotion, relationships, intuition, empathy—act with clarity."}, {"id": "42", "name": "Seven of Cups", "arcana": "Minor Arcana · Cups", "element": "Water", "up_kw": "perseverance, assessment, defense, discernment", "rev_kw": "overwhelm, giving up too soon, scatter", "up_desc": "Hold your ground and evaluate strategically to protect your gains in emotion, relationships, intuition, empathy.", "rev_desc": "Drop unnecessary battles and focus only on what truly matters in emotion, relationships, intuition, empathy.", "love": "In love, Seven of Cups highlights emotion, relationships, intuition, empathy—stay authentic and communicative.", "career": "In career & finances, Seven of Cups emphasizes emotion, relationships, intuition, empathy—act with clarity."}, {"id": "43", "name": "Eight of Cups", "arcana": "Minor Arcana · Cups", "element": "Water", "up_kw": "swift movement, mastery, momentum, dedication", "rev_kw": "haste, frustration, feeling trapped", "up_desc": "Rapid progress, focused skill-building, and decisive flow in emotion, relationships, intuition, empathy.", "rev_desc": "Slow down to avoid careless mistakes or spinning your wheels in emotion, relationships, intuition, empathy.", "love": "In love, Eight of Cups highlights emotion, relationships, intuition, empathy—stay authentic and communicative.", "career": "In career & finances, Eight of Cups emphasizes emotion, relationships, intuition, empathy—act with clarity."}, {"id": "44", "name": "Nine of Cups", "arcana": "Minor Arcana · Cups", "element": "Water", "up_kw": "resilience, culmination, near-completion, vigilance", "rev_kw": "exhaustion, paranoia, letting guard slip", "up_desc": "You are close to the finish line—stay steady and protect what you built in emotion, relationships, intuition, empathy.", "rev_desc": "Fatigue sets in; rest, delegate, and release unnecessary worry around emotion, relationships, intuition, empathy.", "love": "In love, Nine of Cups highlights emotion, relationships, intuition, empathy—stay authentic and communicative.", "career": "In career & finances, Nine of Cups emphasizes emotion, relationships, intuition, empathy—act with clarity."}, {"id": "45", "name": "Ten of Cups", "arcana": "Minor Arcana · Cups", "element": "Water", "up_kw": "fulfillment, legacy, completion, carrying weight", "rev_kw": "burnout, overextension, releasing burden", "up_desc": "A full cycle culminates with lasting impact and tangible weight in emotion, relationships, intuition, empathy.", "rev_desc": "You are carrying too much alone—delegate or put down excess baggage in emotion, relationships, intuition, empathy.", "love": "In love, Ten of Cups highlights emotion, relationships, intuition, empathy—stay authentic and communicative.", "career": "In career & finances, Ten of Cups emphasizes emotion, relationships, intuition, empathy—act with clarity."}, {"id": "46", "name": "Page of Cups", "arcana": "Minor Arcana · Cups", "element": "Water", "up_kw": "curiosity, fresh message, student mindset, exploration", "rev_kw": "immaturity, scattered news, procrastination", "up_desc": "An intriguing message, fresh curiosity, or beginner's breakthrough in emotion, relationships, intuition, empathy.", "rev_desc": "Verify information carefully and turn idle curiosity into disciplined action in emotion, relationships, intuition, empathy.", "love": "In love, Page of Cups highlights emotion, relationships, intuition, empathy—stay authentic and communicative.", "career": "In career & finances, Page of Cups emphasizes emotion, relationships, intuition, empathy—act with clarity."}, {"id": "47", "name": "Knight of Cups", "arcana": "Minor Arcana · Cups", "element": "Water", "up_kw": "bold pursuit, momentum, adventure, commitment", "rev_kw": "impulsiveness, recklessness, stalled drive", "up_desc": "Passionate forward drive and committed action propel you through emotion, relationships, intuition, empathy.", "rev_desc": "Channel restless energy wisely instead of rushing headlong into emotion, relationships, intuition, empathy.", "love": "In love, Knight of Cups highlights emotion, relationships, intuition, empathy—stay authentic and communicative.", "career": "In career & finances, Knight of Cups emphasizes emotion, relationships, intuition, empathy—act with clarity."}, {"id": "48", "name": "Queen of Cups", "arcana": "Minor Arcana · Cups", "element": "Water", "up_kw": "mastery, emotional intelligence, nurturing authority", "rev_kw": "insecurity, overcontrol, inward imbalance", "up_desc": "Mature grace, intuitive command, and steady magnetism elevate emotion, relationships, intuition, empathy.", "rev_desc": "Reclaim inner balance and self-assurance rather than overextending in emotion, relationships, intuition, empathy.", "love": "In love, Queen of Cups highlights emotion, relationships, intuition, empathy—stay authentic and communicative.", "career": "In career & finances, Queen of Cups emphasizes emotion, relationships, intuition, empathy—act with clarity."}, {"id": "49", "name": "King of Cups", "arcana": "Minor Arcana · Cups", "element": "Water", "up_kw": "sovereign mastery, leadership, strategic command", "rev_kw": "domineering streak, rigidity, detached judgment", "up_desc": "Authoritative mastery, clear vision, and seasoned leadership govern emotion, relationships, intuition, empathy.", "rev_desc": "Lead with wisdom and fairness rather than rigid control in emotion, relationships, intuition, empathy.", "love": "In love, King of Cups highlights emotion, relationships, intuition, empathy—stay authentic and communicative.", "career": "In career & finances, King of Cups emphasizes emotion, relationships, intuition, empathy—act with clarity."}, {"id": "50", "name": "Ace of Swords", "arcana": "Minor Arcana · Swords", "element": "Air", "up_kw": "pure potential, fresh spark, new opportunity", "rev_kw": "blocked start, missed chance, hesitation", "up_desc": "A potent new seed of intellect, truth, communication, conflict arrives ready for you to cultivate.", "rev_desc": "Delays or internal resistance hold back a promising new beginning in intellect, truth, communication, conflict.", "love": "In love, Ace of Swords highlights intellect, truth, communication, conflict—stay authentic and communicative.", "career": "In career & finances, Ace of Swords emphasizes intellect, truth, communication, conflict—act with clarity."}, {"id": "51", "name": "Two of Swords", "arcana": "Minor Arcana · Swords", "element": "Air", "up_kw": "balance, partnership, planning, dual choice", "rev_kw": "indecision, imbalance, stalled alignment", "up_desc": "Weighing options carefully and aligning perspectives around intellect, truth, communication, conflict.", "rev_desc": "Crossed signals or hesitation create friction when coordinating intellect, truth, communication, conflict.", "love": "In love, Two of Swords highlights intellect, truth, communication, conflict—stay authentic and communicative.", "career": "In career & finances, Two of Swords emphasizes intellect, truth, communication, conflict—act with clarity."}, {"id": "52", "name": "Three of Swords", "arcana": "Minor Arcana · Swords", "element": "Air", "up_kw": "expansion, collaboration, initial growth", "rev_kw": "delays, misalignment, solo strain", "up_desc": "Early efforts in intellect, truth, communication, conflict expand through teamwork and shared momentum.", "rev_desc": "Progress slows due to scattered coordination; realign expectations in intellect, truth, communication, conflict.", "love": "In love, Three of Swords highlights intellect, truth, communication, conflict—stay authentic and communicative.", "career": "In career & finances, Three of Swords emphasizes intellect, truth, communication, conflict—act with clarity."}, {"id": "53", "name": "Four of Swords", "arcana": "Minor Arcana · Swords", "element": "Air", "up_kw": "stability, foundation, rest, consolidation", "rev_kw": "stagnation, restlessness, rigid comfort", "up_desc": "A solid milestone of stability and security takes shape in intellect, truth, communication, conflict.", "rev_desc": "Playing it too safe risks stagnation; refresh your approach to intellect, truth, communication, conflict.", "love": "In love, Four of Swords highlights intellect, truth, communication, conflict—stay authentic and communicative.", "career": "In career & finances, Four of Swords emphasizes intellect, truth, communication, conflict—act with clarity."}, {"id": "54", "name": "Five of Swords", "arcana": "Minor Arcana · Swords", "element": "Air", "up_kw": "friction, challenge, competition, growing pains", "rev_kw": "resolution, compromise, moving past conflict", "up_desc": "Constructive tension tests your resilience and sharpens your edge in intellect, truth, communication, conflict.", "rev_desc": "The worst of the friction eases as you choose peace and smarter strategy in intellect, truth, communication, conflict.", "love": "In love, Five of Swords highlights intellect, truth, communication, conflict—stay authentic and communicative.", "career": "In career & finances, Five of Swords emphasizes intellect, truth, communication, conflict—act with clarity."}, {"id": "55", "name": "Six of Swords", "arcana": "Minor Arcana · Swords", "element": "Air", "up_kw": "harmony, recognition, progress, reciprocity", "rev_kw": "unbalanced giving, delayed praise, nostalgia", "up_desc": "Smooth forward movement, support, and welcome progress in intellect, truth, communication, conflict.", "rev_desc": "Check whether give-and-take feels lopsided as you navigate intellect, truth, communication, conflict.", "love": "In love, Six of Swords highlights intellect, truth, communication, conflict—stay authentic and communicative.", "career": "In career & finances, Six of Swords emphasizes intellect, truth, communication, conflict—act with clarity."}, {"id": "56", "name": "Seven of Swords", "arcana": "Minor Arcana · Swords", "element": "Air", "up_kw": "perseverance, assessment, defense, discernment", "rev_kw": "overwhelm, giving up too soon, scatter", "up_desc": "Hold your ground and evaluate strategically to protect your gains in intellect, truth, communication, conflict.", "rev_desc": "Drop unnecessary battles and focus only on what truly matters in intellect, truth, communication, conflict.", "love": "In love, Seven of Swords highlights intellect, truth, communication, conflict—stay authentic and communicative.", "career": "In career & finances, Seven of Swords emphasizes intellect, truth, communication, conflict—act with clarity."}, {"id": "57", "name": "Eight of Swords", "arcana": "Minor Arcana · Swords", "element": "Air", "up_kw": "swift movement, mastery, momentum, dedication", "rev_kw": "haste, frustration, feeling trapped", "up_desc": "Rapid progress, focused skill-building, and decisive flow in intellect, truth, communication, conflict.", "rev_desc": "Slow down to avoid careless mistakes or spinning your wheels in intellect, truth, communication, conflict.", "love": "In love, Eight of Swords highlights intellect, truth, communication, conflict—stay authentic and communicative.", "career": "In career & finances, Eight of Swords emphasizes intellect, truth, communication, conflict—act with clarity."}, {"id": "58", "name": "Nine of Swords", "arcana": "Minor Arcana · Swords", "element": "Air", "up_kw": "resilience, culmination, near-completion, vigilance", "rev_kw": "exhaustion, paranoia, letting guard slip", "up_desc": "You are close to the finish line—stay steady and protect what you built in intellect, truth, communication, conflict.", "rev_desc": "Fatigue sets in; rest, delegate, and release unnecessary worry around intellect, truth, communication, conflict.", "love": "In love, Nine of Swords highlights intellect, truth, communication, conflict—stay authentic and communicative.", "career": "In career & finances, Nine of Swords emphasizes intellect, truth, communication, conflict—act with clarity."}, {"id": "59", "name": "Ten of Swords", "arcana": "Minor Arcana · Swords", "element": "Air", "up_kw": "fulfillment, legacy, completion, carrying weight", "rev_kw": "burnout, overextension, releasing burden", "up_desc": "A full cycle culminates with lasting impact and tangible weight in intellect, truth, communication, conflict.", "rev_desc": "You are carrying too much alone—delegate or put down excess baggage in intellect, truth, communication, conflict.", "love": "In love, Ten of Swords highlights intellect, truth, communication, conflict—stay authentic and communicative.", "career": "In career & finances, Ten of Swords emphasizes intellect, truth, communication, conflict—act with clarity."}, {"id": "60", "name": "Page of Swords", "arcana": "Minor Arcana · Swords", "element": "Air", "up_kw": "curiosity, fresh message, student mindset, exploration", "rev_kw": "immaturity, scattered news, procrastination", "up_desc": "An intriguing message, fresh curiosity, or beginner's breakthrough in intellect, truth, communication, conflict.", "rev_desc": "Verify information carefully and turn idle curiosity into disciplined action in intellect, truth, communication, conflict.", "love": "In love, Page of Swords highlights intellect, truth, communication, conflict—stay authentic and communicative.", "career": "In career & finances, Page of Swords emphasizes intellect, truth, communication, conflict—act with clarity."}, {"id": "61", "name": "Knight of Swords", "arcana": "Minor Arcana · Swords", "element": "Air", "up_kw": "bold pursuit, momentum, adventure, commitment", "rev_kw": "impulsiveness, recklessness, stalled drive", "up_desc": "Passionate forward drive and committed action propel you through intellect, truth, communication, conflict.", "rev_desc": "Channel restless energy wisely instead of rushing headlong into intellect, truth, communication, conflict.", "love": "In love, Knight of Swords highlights intellect, truth, communication, conflict—stay authentic and communicative.", "career": "In career & finances, Knight of Swords emphasizes intellect, truth, communication, conflict—act with clarity."}, {"id": "62", "name": "Queen of Swords", "arcana": "Minor Arcana · Swords", "element": "Air", "up_kw": "mastery, emotional intelligence, nurturing authority", "rev_kw": "insecurity, overcontrol, inward imbalance", "up_desc": "Mature grace, intuitive command, and steady magnetism elevate intellect, truth, communication, conflict.", "rev_desc": "Reclaim inner balance and self-assurance rather than overextending in intellect, truth, communication, conflict.", "love": "In love, Queen of Swords highlights intellect, truth, communication, conflict—stay authentic and communicative.", "career": "In career & finances, Queen of Swords emphasizes intellect, truth, communication, conflict—act with clarity."}, {"id": "63", "name": "King of Swords", "arcana": "Minor Arcana · Swords", "element": "Air", "up_kw": "sovereign mastery, leadership, strategic command", "rev_kw": "domineering streak, rigidity, detached judgment", "up_desc": "Authoritative mastery, clear vision, and seasoned leadership govern intellect, truth, communication, conflict.", "rev_desc": "Lead with wisdom and fairness rather than rigid control in intellect, truth, communication, conflict.", "love": "In love, King of Swords highlights intellect, truth, communication, conflict—stay authentic and communicative.", "career": "In career & finances, King of Swords emphasizes intellect, truth, communication, conflict—act with clarity."}, {"id": "64", "name": "Ace of Pentacles", "arcana": "Minor Arcana · Pentacles", "element": "Earth", "up_kw": "pure potential, fresh spark, new opportunity", "rev_kw": "blocked start, missed chance, hesitation", "up_desc": "A potent new seed of wealth, career, health, tangible results arrives ready for you to cultivate.", "rev_desc": "Delays or internal resistance hold back a promising new beginning in wealth, career, health, tangible results.", "love": "In love, Ace of Pentacles highlights wealth, career, health, tangible results—stay authentic and communicative.", "career": "In career & finances, Ace of Pentacles emphasizes wealth, career, health, tangible results—act with clarity."}, {"id": "65", "name": "Two of Pentacles", "arcana": "Minor Arcana · Pentacles", "element": "Earth", "up_kw": "balance, partnership, planning, dual choice", "rev_kw": "indecision, imbalance, stalled alignment", "up_desc": "Weighing options carefully and aligning perspectives around wealth, career, health, tangible results.", "rev_desc": "Crossed signals or hesitation create friction when coordinating wealth, career, health, tangible results.", "love": "In love, Two of Pentacles highlights wealth, career, health, tangible results—stay authentic and communicative.", "career": "In career & finances, Two of Pentacles emphasizes wealth, career, health, tangible results—act with clarity."}, {"id": "66", "name": "Three of Pentacles", "arcana": "Minor Arcana · Pentacles", "element": "Earth", "up_kw": "expansion, collaboration, initial growth", "rev_kw": "delays, misalignment, solo strain", "up_desc": "Early efforts in wealth, career, health, tangible results expand through teamwork and shared momentum.", "rev_desc": "Progress slows due to scattered coordination; realign expectations in wealth, career, health, tangible results.", "love": "In love, Three of Pentacles highlights wealth, career, health, tangible results—stay authentic and communicative.", "career": "In career & finances, Three of Pentacles emphasizes wealth, career, health, tangible results—act with clarity."}, {"id": "67", "name": "Four of Pentacles", "arcana": "Minor Arcana · Pentacles", "element": "Earth", "up_kw": "stability, foundation, rest, consolidation", "rev_kw": "stagnation, restlessness, rigid comfort", "up_desc": "A solid milestone of stability and security takes shape in wealth, career, health, tangible results.", "rev_desc": "Playing it too safe risks stagnation; refresh your approach to wealth, career, health, tangible results.", "love": "In love, Four of Pentacles highlights wealth, career, health, tangible results—stay authentic and communicative.", "career": "In career & finances, Four of Pentacles emphasizes wealth, career, health, tangible results—act with clarity."}, {"id": "68", "name": "Five of Pentacles", "arcana": "Minor Arcana · Pentacles", "element": "Earth", "up_kw": "friction, challenge, competition, growing pains", "rev_kw": "resolution, compromise, moving past conflict", "up_desc": "Constructive tension tests your resilience and sharpens your edge in wealth, career, health, tangible results.", "rev_desc": "The worst of the friction eases as you choose peace and smarter strategy in wealth, career, health, tangible results.", "love": "In love, Five of Pentacles highlights wealth, career, health, tangible results—stay authentic and communicative.", "career": "In career & finances, Five of Pentacles emphasizes wealth, career, health, tangible results—act with clarity."}, {"id": "69", "name": "Six of Pentacles", "arcana": "Minor Arcana · Pentacles", "element": "Earth", "up_kw": "harmony, recognition, progress, reciprocity", "rev_kw": "unbalanced giving, delayed praise, nostalgia", "up_desc": "Smooth forward movement, support, and welcome progress in wealth, career, health, tangible results.", "rev_desc": "Check whether give-and-take feels lopsided as you navigate wealth, career, health, tangible results.", "love": "In love, Six of Pentacles highlights wealth, career, health, tangible results—stay authentic and communicative.", "career": "In career & finances, Six of Pentacles emphasizes wealth, career, health, tangible results—act with clarity."}, {"id": "70", "name": "Seven of Pentacles", "arcana": "Minor Arcana · Pentacles", "element": "Earth", "up_kw": "perseverance, assessment, defense, discernment", "rev_kw": "overwhelm, giving up too soon, scatter", "up_desc": "Hold your ground and evaluate strategically to protect your gains in wealth, career, health, tangible results.", "rev_desc": "Drop unnecessary battles and focus only on what truly matters in wealth, career, health, tangible results.", "love": "In love, Seven of Pentacles highlights wealth, career, health, tangible results—stay authentic and communicative.", "career": "In career & finances, Seven of Pentacles emphasizes wealth, career, health, tangible results—act with clarity."}, {"id": "71", "name": "Eight of Pentacles", "arcana": "Minor Arcana · Pentacles", "element": "Earth", "up_kw": "swift movement, mastery, momentum, dedication", "rev_kw": "haste, frustration, feeling trapped", "up_desc": "Rapid progress, focused skill-building, and decisive flow in wealth, career, health, tangible results.", "rev_desc": "Slow down to avoid careless mistakes or spinning your wheels in wealth, career, health, tangible results.", "love": "In love, Eight of Pentacles highlights wealth, career, health, tangible results—stay authentic and communicative.", "career": "In career & finances, Eight of Pentacles emphasizes wealth, career, health, tangible results—act with clarity."}, {"id": "72", "name": "Nine of Pentacles", "arcana": "Minor Arcana · Pentacles", "element": "Earth", "up_kw": "resilience, culmination, near-completion, vigilance", "rev_kw": "exhaustion, paranoia, letting guard slip", "up_desc": "You are close to the finish line—stay steady and protect what you built in wealth, career, health, tangible results.", "rev_desc": "Fatigue sets in; rest, delegate, and release unnecessary worry around wealth, career, health, tangible results.", "love": "In love, Nine of Pentacles highlights wealth, career, health, tangible results—stay authentic and communicative.", "career": "In career & finances, Nine of Pentacles emphasizes wealth, career, health, tangible results—act with clarity."}, {"id": "73", "name": "Ten of Pentacles", "arcana": "Minor Arcana · Pentacles", "element": "Earth", "up_kw": "fulfillment, legacy, completion, carrying weight", "rev_kw": "burnout, overextension, releasing burden", "up_desc": "A full cycle culminates with lasting impact and tangible weight in wealth, career, health, tangible results.", "rev_desc": "You are carrying too much alone—delegate or put down excess baggage in wealth, career, health, tangible results.", "love": "In love, Ten of Pentacles highlights wealth, career, health, tangible results—stay authentic and communicative.", "career": "In career & finances, Ten of Pentacles emphasizes wealth, career, health, tangible results—act with clarity."}, {"id": "74", "name": "Page of Pentacles", "arcana": "Minor Arcana · Pentacles", "element": "Earth", "up_kw": "curiosity, fresh message, student mindset, exploration", "rev_kw": "immaturity, scattered news, procrastination", "up_desc": "An intriguing message, fresh curiosity, or beginner's breakthrough in wealth, career, health, tangible results.", "rev_desc": "Verify information carefully and turn idle curiosity into disciplined action in wealth, career, health, tangible results.", "love": "In love, Page of Pentacles highlights wealth, career, health, tangible results—stay authentic and communicative.", "career": "In career & finances, Page of Pentacles emphasizes wealth, career, health, tangible results—act with clarity."}, {"id": "75", "name": "Knight of Pentacles", "arcana": "Minor Arcana · Pentacles", "element": "Earth", "up_kw": "bold pursuit, momentum, adventure, commitment", "rev_kw": "impulsiveness, recklessness, stalled drive", "up_desc": "Passionate forward drive and committed action propel you through wealth, career, health, tangible results.", "rev_desc": "Channel restless energy wisely instead of rushing headlong into wealth, career, health, tangible results.", "love": "In love, Knight of Pentacles highlights wealth, career, health, tangible results—stay authentic and communicative.", "career": "In career & finances, Knight of Pentacles emphasizes wealth, career, health, tangible results—act with clarity."}, {"id": "76", "name": "Queen of Pentacles", "arcana": "Minor Arcana · Pentacles", "element": "Earth", "up_kw": "mastery, emotional intelligence, nurturing authority", "rev_kw": "insecurity, overcontrol, inward imbalance", "up_desc": "Mature grace, intuitive command, and steady magnetism elevate wealth, career, health, tangible results.", "rev_desc": "Reclaim inner balance and self-assurance rather than overextending in wealth, career, health, tangible results.", "love": "In love, Queen of Pentacles highlights wealth, career, health, tangible results—stay authentic and communicative.", "career": "In career & finances, Queen of Pentacles emphasizes wealth, career, health, tangible results—act with clarity."}, {"id": "77", "name": "King of Pentacles", "arcana": "Minor Arcana · Pentacles", "element": "Earth", "up_kw": "sovereign mastery, leadership, strategic command", "rev_kw": "domineering streak, rigidity, detached judgment", "up_desc": "Authoritative mastery, clear vision, and seasoned leadership govern wealth, career, health, tangible results.", "rev_desc": "Lead with wisdom and fairness rather than rigid control in wealth, career, health, tangible results.", "love": "In love, King of Pentacles highlights wealth, career, health, tangible results—stay authentic and communicative.", "career": "In career & finances, King of Pentacles emphasizes wealth, career, health, tangible results—act with clarity."}];
+    const ZODIAC_LIST = [{"sign": "Aries", "symbol": "♈", "dates": "Mar 21 – Apr 19", "start": [3, 21], "end": [4, 19], "element": "Fire", "modality": "Cardinal", "ruler": "Mars", "lucky_num": "1, 9", "lucky_color": "Crimson Red", "compatible": "Leo, Sagittarius, Gemini", "traits": "Bold, pioneering, energetic, direct, and fiercely courageous.", "love": "Passionate and spontaneous; thrives with partners who match your adventurous spark.", "career": "Natural trailblazer; excels in entrepreneurship, leadership, and fast-paced launches.", "daily_pool": ["Your decisive energy opens a door today—take the lead on a stalled initiative.", "Channel fiery enthusiasm into focused action rather than scattered debates.", "A bold conversation clears the air and sparks fresh momentum in work and love."]}, {"sign": "Taurus", "symbol": "♉", "dates": "Apr 20 – May 20", "start": [4, 20], "end": [5, 20], "element": "Earth", "modality": "Fixed", "ruler": "Venus", "lucky_num": "2, 6", "lucky_color": "Emerald Green", "compatible": "Virgo, Capricorn, Cancer", "traits": "Grounded, patient, sensual, reliable, and deeply appreciative of quality.", "love": "Devoted and loyal; builds steady, comforting bonds rooted in trust and affection.", "career": "Excels in finance, design, real estate, and building durable long-term wealth.", "daily_pool": ["Steady persistence beats haste today; double down on practical, high-value priorities.", "Financial clarity improves when you review budgets and invest in lasting quality.", "Slow down to savor simple comforts—grounded calm attracts positive news."]}, {"sign": "Gemini", "symbol": "♊", "dates": "May 21 – Jun 20", "start": [5, 21], "end": [6, 20], "element": "Air", "modality": "Mutable", "ruler": "Mercury", "lucky_num": "5, 7", "lucky_color": "Saffron Yellow", "compatible": "Libra, Aquarius, Aries", "traits": "Curious, articulate, quick-witted, adaptable, and socially magnetic.", "love": "Values mental chemistry, playful banter, and endless shared curiosity.", "career": "Shines in media, tech, writing, sales, negotiation, and multi-project strategy.", "daily_pool": ["An unexpected message or conversation sparks a clever breakthrough—keep notes handy.", "Filter out background noise and focus your sharp intellect on your top two priorities.", "Networking and candid dialogue bring timely insights from an unlikely ally."]}, {"sign": "Cancer", "symbol": "♋", "dates": "Jun 21 – Jul 22", "start": [6, 21], "end": [7, 22], "element": "Water", "modality": "Cardinal", "ruler": "Moon", "lucky_num": "2, 7", "lucky_color": "Silver Pearl", "compatible": "Scorpio, Pisces, Taurus", "traits": "Intuitive, protective, empathetic, loyal, and emotionally perceptive.", "love": "Deeply nurturing and devoted; seeks emotional safety and genuine heart connection.", "career": "Thrives in counseling, hospitality, family enterprise, product care, and strategic intuition.", "daily_pool": ["Trust your gut instinct today—your emotional radar spots what others overlook.", "Strengthening home base and personal boundaries restores your creative confidence.", "A heartfelt check-in deepens trust with someone close to you."]}, {"sign": "Leo", "symbol": "♌", "dates": "Jul 23 – Aug 22", "start": [7, 23], "end": [8, 22], "element": "Fire", "modality": "Fixed", "ruler": "Sun", "lucky_num": "1, 4", "lucky_color": "Royal Gold", "compatible": "Aries, Sagittarius, Libra", "traits": "Charismatic, generous, creative, warm-hearted, and naturally expressive.", "love": "Grand-hearted and romantic; loves celebrating partners with loyalty and warmth.", "career": "Commanding presence suited for creative direction, executive leadership, and public stage.", "daily_pool": ["Step into the spotlight with confidence—your warmth and clarity inspire buy-in.", "Lead with generosity today and watch recognition naturally circle back to you.", "A creative idea gains traction when you present it boldly and authentically."]}, {"sign": "Virgo", "symbol": "♍", "dates": "Aug 23 – Sep 22", "start": [8, 23], "end": [9, 22], "element": "Earth", "modality": "Mutable", "ruler": "Mercury", "lucky_num": "3, 5", "lucky_color": "Forest Olive", "compatible": "Taurus, Capricorn, Scorpio", "traits": "Analytical, conscientious, practical, refined, and devoted to mastery.", "love": "Shows love through thoughtful acts of service, attentiveness, and steady devotion.", "career": "Unmatched in operations, data analysis, healthcare, engineering, and quality craft.", "daily_pool": ["Refining one key workflow today saves hours later—precision is your superpower.", "Release perfectionism on minor details so you can ship your best work on time.", "Clear organization brings calm focus to both finances and personal routines."]}, {"sign": "Libra", "symbol": "♎", "dates": "Sep 23 – Oct 22", "start": [9, 23], "end": [10, 22], "element": "Air", "modality": "Cardinal", "ruler": "Venus", "lucky_num": "6, 9", "lucky_color": "Rose Quartz", "compatible": "Gemini, Aquarius, Leo", "traits": "Diplomatic, aesthetic, fair-minded, charming, and harmony-seeking.", "love": "Partnership-oriented and romantic; thrives on mutual respect, beauty, and balance.", "career": "Excels in law, partnerships, UX/aesthetic design, mediation, and client relations.", "daily_pool": ["A balanced compromise unlocks a win-win agreement that seemed deadlocked.", "Trust your aesthetic and diplomatic instincts—graceful communication opens doors.", "Make a clear decision today rather than over-weighing every hypothetical angle."]}, {"sign": "Scorpio", "symbol": "♏", "dates": "Oct 23 – Nov 21", "start": [10, 23], "end": [11, 21], "element": "Water", "modality": "Fixed", "ruler": "Pluto & Mars", "lucky_num": "4, 8", "lucky_color": "Obsidian Wine", "compatible": "Cancer, Pisces, Virgo", "traits": "Perceptive, magnetic, resilient, strategic, and fiercely transformative.", "love": "All-or-nothing depth; craves radical honesty, loyalty, and soulful intimacy.", "career": "Powerhouse in research, finance, psychology, turnaround strategy, and investigation.", "daily_pool": ["Look beneath surface appearances today—your strategic insight uncovers hidden leverage.", "Let go of an outdated attachment to make room for a far stronger rebirth.", "Focused intensity helps you crack a complex problem others gave up on."]}, {"sign": "Sagittarius", "symbol": "♐", "dates": "Nov 22 – Dec 21", "start": [11, 22], "end": [12, 21], "element": "Fire", "modality": "Mutable", "ruler": "Jupiter", "lucky_num": "3, 9", "lucky_color": "Royal Purple", "compatible": "Aries, Leo, Aquarius", "traits": "Optimistic, philosophical, adventurous, candid, and freedom-loving.", "love": "Seeks an inspiring co-adventurer who values honesty, humor, and shared horizons.", "career": "Thrives in international business, publishing, education, travel, and big-picture vision.", "daily_pool": ["Zoom out to the big picture—a fresh horizon or cross-border idea calls your name.", "Optimism paired with follow-through turns an ambitious concept into real progress.", "Spontaneous learning or travel plans bring energizing luck today."]}, {"sign": "Capricorn", "symbol": "♑", "dates": "Dec 22 – Jan 19", "start": [12, 22], "end": [1, 19], "element": "Earth", "modality": "Cardinal", "ruler": "Saturn", "lucky_num": "4, 8", "lucky_color": "Charcoal Slate", "compatible": "Taurus, Virgo, Pisces", "traits": "Ambitious, disciplined, pragmatic, enduring, and quietly witty.", "love": "Committed and protective; builds relationships designed to stand the test of time.", "career": "Born strategist and builder; excels in executive management, finance, and architecture.", "daily_pool": ["Long-term discipline pays visible dividends today—stay locked on your summit.", "Structure and clear milestones turn a complex goal into steady, measurable wins.", "Remember to celebrate how far you have climbed while setting your next benchmark."]}, {"sign": "Aquarius", "symbol": "♒", "dates": "Jan 20 – Feb 18", "start": [1, 20], "end": [2, 18], "element": "Air", "modality": "Fixed", "ruler": "Uranus & Saturn", "lucky_num": "7, 11", "lucky_color": "Electric Cyan", "compatible": "Gemini, Libra, Sagittarius", "traits": "Visionary, independent, inventive, humanitarian, and refreshingly original.", "love": "Values intellectual friendship, mutual freedom, and unconventional authenticity.", "career": "Innovator in software, AI, social networks, science, and forward-thinking communities.", "daily_pool": ["An unconventional idea sets you apart today—trust your original blueprint.", "Collaborating with forward-thinking peers sparks rapid momentum.", "Step back for a bird's-eye view; detachment brings crystal-clear objectivity."]}, {"sign": "Pisces", "symbol": "♓", "dates": "Feb 19 – Mar 20", "start": [2, 19], "end": [3, 20], "element": "Water", "modality": "Mutable", "ruler": "Neptune & Jupiter", "lucky_num": "3, 7", "lucky_color": "Seafoam Teal", "compatible": "Cancer, Scorpio, Capricorn", "traits": "Imaginative, compassionate, artistic, mystical, and deeply empathetic.", "love": "Romantic, soulful, and tender; thrives on poetic connection and mutual empathy.", "career": "Flourishes in art, music, healing, film, design, and intuitive creative direction.", "daily_pool": ["Creative imagination and subtle intuition guide you effortlessly toward the right choice.", "Protect your peace with gentle boundaries while pursuing an inspired artistic vision.", "Synchronicities appear when you slow down and trust the flow of the day."]}];
+    const LIFE_PATHS = {"1": ["The Pioneer", "Independent leader, innovator, self-reliant trailblazer."], "2": ["The Diplomat", "Intuitive peacemaker, cooperative partner, empathetic bridge-builder."], "3": ["The Creator", "Expressive communicator, joyful artist, optimistic catalyst."], "4": ["The Builder", "Disciplined architect, reliable organizer, grounded strategist."], "5": ["The Explorer", "Dynamic freedom-seeker, adaptable communicator, catalyst of change."], "6": ["The Nurturer", "Harmonious caretaker, responsible mentor, devoted protector."], "7": ["The Seeker", "Analytical mystic, deep researcher, seeker of hidden truth."], "8": ["The Powerhouse", "Strategic manifestor, executive leader, master of material & spiritual balance."], "9": ["The Humanitarian", "Compassionate visionary, wise old soul, selfless inspirer."], "11": ["Master Intuitive", "Heightened spiritual insight, visionary inspiration, luminous sensitivity."], "22": ["Master Builder", "Turns visionary ideals into large-scale tangible reality."], "33": ["Master Teacher", "Uplifting compassion, creative healing, service through wisdom."]};
+
+    let lastContext = { tarot: "", zodiac: "", synastry: "" };
+
+    function logMsg(msg) {
+      const box = document.getElementById("logBox");
+      if (!box) return;
+      const d = document.createElement("div");
+      d.textContent = "[" + new Date().toISOString().slice(11, 19) + "] " + msg;
+      box.appendChild(d);
+      box.scrollTop = box.scrollHeight;
+    }
+
+    function switchTab(id, btn) {
+      document.querySelectorAll(".panel").forEach(p => p.classList.remove("active"));
+      document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+      document.getElementById("panel-" + id).classList.add("active");
+      btn.classList.add("active");
+    }
+
+    function getZodiacByMonthDay(m, d) {
+      for (const z of ZODIAC_LIST) {
+        const [sm, sd] = z.start;
+        const [em, ed] = z.end;
+        if (sm <= em) {
+          if ((m === sm && d >= sd) || (m === em && d <= ed)) return z;
+        } else {
+          // Capricorn wraps Dec -> Jan
+          if ((m === sm && d >= sd) || (m === em && d <= ed)) return z;
+        }
+      }
+      return ZODIAC_LIST[0];
+    }
+
+    function getMoonPhaseInfo(dateObj) {
+      // Synodic month calculation (~29.53058867 days from known New Moon 2000-01-06 18:14 UTC)
+      const knownNewMoon = Date.UTC(2000, 0, 6, 18, 14, 0);
+      const synodic = 29.53058867 * 86400000;
+      const phase = (((dateObj.getTime() - knownNewMoon) % synodic) + synodic) % synodic / synodic;
+      const illum = Math.round((1 - Math.cos(2 * Math.PI * phase)) * 50);
+      let name = "New Moon 🌑 (Set Intentions)";
+      if (phase >= 0.0625 && phase < 0.1875) name = "Waxing Crescent 🌒 (Initiate & Build)";
+      else if (phase >= 0.1875 && phase < 0.3125) name = "First Quarter 🌓 (Take Action)";
+      else if (phase >= 0.3125 && phase < 0.4375) name = "Waxing Gibbous 🌔 (Refine & Momentum)";
+      else if (phase >= 0.4375 && phase < 0.5625) name = "Full Moon 🌕 (Illumination & Culmination)";
+      else if (phase >= 0.5625 && phase < 0.6875) name = "Waning Gibbous 🌖 (Gratitude & Share)";
+      else if (phase >= 0.6875 && phase < 0.8125) name = "Last Quarter 🌗 (Release & Realign)";
+      else if (phase >= 0.8125 && phase < 0.9375) name = "Waning Crescent 🌘 (Rest & Reflect)";
+      return { name, illum };
+    }
+
+    function computeLifePath(dateStr) {
+      const digits = dateStr.replace(/[^0-9]/g, "").split("").map(Number);
+      let sum = digits.reduce((a, b) => a + b, 0);
+      while (sum > 9 && sum !== 11 && sum !== 22 && sum !== 33) {
+        sum = String(sum).split("").map(Number).reduce((a, b) => a + b, 0);
+      }
+      return String(sum);
+    }
+
+    // ========== 1. TAROT SPREAD ENGINE ==========
+    function drawTarotSpread() {
+      const count = parseInt(document.getElementById("tarotSpread").value, 10);
+      const mode = document.getElementById("tarotDeckMode").value;
+      const q = document.getElementById("tarotQuestion").value.trim() || "General Guidance";
+
+      const pool = mode === "major" ? TAROT_DECK.slice(0, 22) : [...TAROT_DECK];
+      // Fisher-Yates unbiased shuffle
+      for (let i = pool.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [pool[i], pool[j]] = [pool[j], pool[i]];
+      }
+
+      const posLabelsMap = {
+        1: ["Daily Oracle"],
+        3: ["1 · Past / Root", "2 · Present / Energy", "3 · Future / Trajectory"],
+        5: ["1 · Core Situation", "2 · Challenge / Block", "3 · Hidden Influence", "4 · Guidance / Action", "5 · Likely Outcome"]
+      };
+      const labels = posLabelsMap[count];
+      const drawn = pool.slice(0, count).map((card, idx) => ({
+        pos: labels[idx],
+        card,
+        reversed: Math.random() < 0.42
+      }));
+
+      const elemCounts = { Fire: 0, Water: 0, Air: 0, Earth: 0 };
+      let majorCount = 0;
+
+      const cardsHtml = drawn.map(item => {
+        elemCounts[item.card.element] = (elemCounts[item.card.element] || 0) + 1;
+        if (item.card.arcana === "Major Arcana") majorCount++;
+        const orientClass = item.reversed ? "orient-rev" : "orient-up";
+        const orientText = item.reversed ? "Reversed ↺" : "Upright ↑";
+        const kw = item.reversed ? item.card.rev_kw : item.card.up_kw;
+        const desc = item.reversed ? item.card.rev_desc : item.card.up_desc;
+        return '<div class="t-card">' +
+          '<div class="t-pos">' + item.pos + '</div>' +
+          '<div class="t-name">' + item.card.name + '</div>' +
+          '<span class="t-orient ' + orientClass + '">' + orientText + '</span>' +
+          '<div class="t-meta">' + item.card.arcana + ' · Element: ' + item.card.element + '</div>' +
+          '<div class="t-kw">Keywords: ' + kw + '</div>' +
+          '<div class="t-desc">' + desc + '</div>' +
+          '</div>';
+      }).join("");
+
+      document.getElementById("tarotCardsGrid").innerHTML = cardsHtml;
+
+      const domElem = Object.entries(elemCounts).sort((a, b) => b[1] - a[1])[0][0];
+      const elemAdvice = {
+        Fire: "Dominant Fire energy calls for bold initiative, passion, and decisive momentum.",
+        Water: "Dominant Water energy highlights intuition, emotional truth, and heart-led choices.",
+        Air: "Dominant Air energy emphasizes clarity, communication, strategy, and objective truth.",
+        Earth: "Dominant Earth energy grounds your path in practical steps, patience, and tangible results."
+      };
+
+      document.getElementById("tarotSummary").innerHTML =
+        "<h4>🔮 Offline Spread Synthesis</h4>" +
+        "<b>Question:</b> " + q + "<br/>" +
+        "<b>Elemental Balance:</b> Fire (" + elemCounts.Fire + ") · Water (" + elemCounts.Water + ") · Air (" + elemCounts.Air + ") · Earth (" + elemCounts.Earth + ")<br/>" +
+        "<b>Archetype Weight:</b> " + majorCount + " of " + count + " cards are Major Arcana" +
+        (majorCount >= Math.ceil(count / 2) ? " (signals a pivotal life turning point)." : " (focuses on day-to-day actionable choices).") + "<br/>" +
+        "<b>Core Guidance:</b> " + elemAdvice[domElem] +
+        "<div class='grid-2'>" +
+          "<div class='mini-box'><b>❤️ Love Lens:</b> " + drawn[drawn.length - 1].card.love + "</div>" +
+          "<div class='mini-box'><b>💼 Career Lens:</b> " + drawn[drawn.length - 1].card.career + "</div>" +
+        "</div>";
+
+      document.getElementById("tarotResult").style.display = "block";
+      document.getElementById("tarotAiOut").style.display = "none";
+
+      lastContext.tarot =
+        "Question: " + q + "\nSpread (" + count + " cards):\n" +
+        drawn.map(d => "- " + d.pos + ": " + d.card.name + " (" + (d.reversed ? "Reversed" : "Upright") + ") — " + (d.reversed ? d.card.rev_kw : d.card.up_kw)).join("\n");
+      logMsg("Tarot spread drawn (" + count + " cards)");
+    }
+
+    function resetTarot() {
+      document.getElementById("tarotResult").style.display = "none";
+      document.getElementById("tarotAiOut").style.display = "none";
+    }
+
+    // ========== 2. ZODIAC & NATAL BLUEPRINT ==========
+    function computeZodiacProfile() {
+      const dateStr = document.getElementById("zodBirthDate").value || "1994-08-18";
+      const timeStr = document.getElementById("zodBirthTime").value || "08:30";
+      const focus = document.getElementById("zodFocus").value;
+
+      const [Y, M, D] = dateStr.split("-").map(Number);
+      const [H, Min] = timeStr.split(":").map(Number);
+      const sun = getZodiacByMonthDay(M, D);
+      const sunIdx = ZODIAC_LIST.findIndex(z => z.sign === sun.sign);
+
+      // Approximate Rising Sign (Ascendant advances ~1 sign every 2 hours from sunrise ~06:00)
+      const hoursFromSunrise = (((H + Min / 60) - 6) % 24 + 24) % 24;
+      const risingIdx = (sunIdx + Math.floor(hoursFromSunrise / 2)) % 12;
+      const rising = ZODIAC_LIST[risingIdx];
+
+      // Approximate Moon Sign using lunar cycle offset from Sun
+      const knownNewMoon = Date.UTC(2000, 0, 6, 18, 14, 0);
+      const birthUtc = Date.UTC(Y, M - 1, D, H, Min, 0);
+      const synodic = 29.53058867 * 86400000;
+      const phase = (((birthUtc - knownNewMoon) % synodic) + synodic) % synodic / synodic;
+      const moonIdx = (sunIdx + Math.floor(phase * 12)) % 12;
+      const moon = ZODIAC_LIST[moonIdx];
+
+      const lpNum = computeLifePath(dateStr);
+      const lpInfo = LIFE_PATHS[lpNum] || ["The Seeker", ""];
+      const dayIdx = new Date().getDate() % sun.daily_pool.length;
+
+      document.getElementById("zodProfileOut").innerHTML =
+        "<h4>✨ Offline Natal Big Three & Daily Horoscope</h4>" +
+        "<div style='margin-bottom:8px;'>" +
+          "<span class='tag'>☀️ Sun: " + sun.symbol + " " + sun.sign + "</span> &nbsp;" +
+          "<span class='tag'>🌙 Moon: " + moon.symbol + " " + moon.sign + "</span> &nbsp;" +
+          "<span class='tag'>⬆️ Rising: " + rising.symbol + " " + rising.sign + "</span> &nbsp;" +
+          "<span class='tag'>🔢 Life Path " + lpNum + ": " + lpInfo[0] + "</span>" +
+        "</div>" +
+        "<b>Sun Sign Blueprint (" + sun.dates + " · " + sun.element + " / " + sun.modality + " · Ruler: " + sun.ruler + "):</b> " + sun.traits + "<br/>" +
+        "<b>Today's Horoscope Guidance:</b> " + sun.daily_pool[dayIdx] + "<br/>" +
+        "<b>Lucky Alignment:</b> Numbers " + sun.lucky_num + " · Color: " + sun.lucky_color + " · Best Matches: " + sun.compatible +
+        "<div class='grid-2'>" +
+          "<div class='mini-box'><b>❤️ Love & Emotional Style (Moon in " + moon.sign + "):</b><br/>" + sun.love + " Inner emotional nature resonates with " + moon.element + " (" + moon.sign + ").</div>" +
+          "<div class='mini-box'><b>💼 Career & Outer Aura (Rising in " + rising.sign + "):</b><br/>" + sun.career + " First impression carries " + rising.sign + " (" + rising.element + ") magnetism.</div>" +
+        "</div>";
+
+      document.getElementById("zodResult").style.display = "block";
+      document.getElementById("zodAiOut").style.display = "none";
+
+      lastContext.zodiac =
+        "Birth: " + dateStr + " " + timeStr + ", Focus: " + focus + "\n" +
+        "Big Three: Sun in " + sun.sign + ", Moon in " + moon.sign + ", Rising in " + rising.sign + "\n" +
+        "Life Path Number: " + lpNum + " (" + lpInfo[0] + " - " + lpInfo[1] + ")";
+      logMsg("Natal & Horoscope generated: Sun " + sun.sign + " / Rising " + rising.sign);
+    }
+
+    // ========== 3. SYNASTRY / COMPATIBILITY ==========
+    function computeSynastry() {
+      const dA = document.getElementById("synDateA").value || "1994-08-18";
+      const dB = document.getElementById("synDateB").value || "1996-03-29";
+      const bond = document.getElementById("synType").value;
+
+      const [, mA, dayA] = dA.split("-").map(Number);
+      const [, mB, dayB] = dB.split("-").map(Number);
+      const zA = getZodiacByMonthDay(mA, dayA);
+      const zB = getZodiacByMonthDay(mB, dayB);
+
+      const pair = [zA.element, zB.element].sort().join("-");
+      let score = 78;
+      let dynamicTitle = "Dynamic Growth & Complementary Spark";
+      let dynamicText = "Different elemental rhythms challenge both of you to expand perspectives and learn new strengths.";
+
+      if (zA.sign === zB.sign) {
+        score = 86;
+        dynamicTitle = "Mirror Soul Alignment (Same Sign)";
+        dynamicText = "Instant mutual understanding and shared instincts; watch out only for magnifying the same blind spots.";
+      } else if (zA.element === zB.element) {
+        score = 93;
+        dynamicTitle = "Trine Elemental Harmony (" + zA.element + " + " + zB.element + ")";
+        dynamicText = "Effortless rapport, natural trust, and matching life tempo—you intuitively speak the same language.";
+      } else if (pair === "Air-Fire" || pair === "Earth-Water") {
+        score = 90;
+        dynamicTitle = "Sextile Mutual Catalyst (" + zA.element + " + " + zB.element + ")";
+        dynamicText = "Naturally supportive synergy: one inspires vision while the other gives it oxygen or form.";
+      } else if (pair === "Fire-Water" || pair === "Air-Earth") {
+        score = 72;
+        dynamicTitle = "Alchemical Tension (" + zA.element + " + " + zB.element + ")";
+        dynamicText = "High chemistry paired with contrasting paces—communication and patience turn friction into mastery.";
+      }
+
+      document.getElementById("synOut").innerHTML =
+        "<h4>💞 Offline Synastry Report (" + bond + ")</h4>" +
+        "<div style='margin-bottom:8px;'>" +
+          "<span class='tag'>" + zA.symbol + " " + zA.sign + " (" + zA.element + ")</span> &nbsp;+&nbsp; " +
+          "<span class='tag'>" + zB.symbol + " " + zB.sign + " (" + zB.element + ")</span> &nbsp;→&nbsp; " +
+          "<span class='tag' style='color:#86efac;border-color:#22c55e;'>Resonance Score: " + score + "%</span>" +
+        "</div>" +
+        "<b>Core Dynamic — " + dynamicTitle + ":</b> " + dynamicText +
+        "<div class='grid-2'>" +
+          "<div class='mini-box'><b>🌟 Strengths Together:</b><br/>" + zA.sign + " brings " + zA.traits.toLowerCase() + " " + zB.sign + " adds " + zB.traits.toLowerCase() + "</div>" +
+          "<div class='mini-box'><b>🧭 Key Advice for " + bond + ":</b><br/>Honor " + zA.sign + "'s need for " + zA.ruler + "-driven authenticity while respecting " + zB.sign + "'s " + zB.modality + " rhythm.</div>" +
+        "</div>";
+
+      document.getElementById("synResult").style.display = "block";
+      document.getElementById("synAiOut").style.display = "none";
+
+      lastContext.synastry =
+        "Bond Type: " + bond + "\nPerson A: " + zA.sign + " (" + zA.element + ", " + zA.modality + ")\n" +
+        "Person B: " + zB.sign + " (" + zB.element + ", " + zB.modality + ")\n" +
+        "Offline Synergy: " + dynamicTitle + " (" + score + "%)";
+      logMsg("Synastry computed: " + zA.sign + " + " + zB.sign + " (" + score + "%)");
+    }
+
+    // ========== 4. GEMINI AI MULTI-MODEL FALLBACK ==========
+    const GEMINI_MODELS = [
+      "gemini-3.5-flash-lite",
+      "gemini-3.5-flash",
+      "gemini-3.6-flash",
+      "gemini-3.7-flash",
+      "gemini-3.8-flash"
+    ];
+
+    async function callGeminiText(apiKey, promptText) {
+      let lastErr = "Gemini request failed";
+      for (const model of GEMINI_MODELS) {
+        const url = "https://generativelanguage.googleapis.com/v1beta/models/" + model + ":generateContent?key=" + encodeURIComponent(apiKey);
+        const res = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ contents: [{ parts: [{ text: promptText }] }] })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          return data.candidates?.[0]?.content?.parts?.[0]?.text || "(Empty AI response)";
+        }
+        lastErr = "HTTP " + res.status + " (" + model + ")";
+        if (res.status === 429 || res.status === 404 || res.status === 503) {
+          logMsg(model + " returned " + res.status + ", switching model...");
+          continue;
+        }
+        throw new Error(lastErr);
+      }
+      throw new Error(lastErr);
+    }
+
+    async function runAiReading(kind) {
+      const apiKey = (localStorage.getItem(STORAGE_KEY_API) || document.getElementById("aiApiKey").value || "").trim();
+      if (!(apiKey.startsWith("AIza") || apiKey.startsWith("AQ."))) {
+        alert("Full offline insights are already shown above. To unlock optional AI synthesis, add your Gemini API Key in Settings.");
+        return;
+      }
+      const outMap = { tarot: "tarotAiOut", zodiac: "zodAiOut", synastry: "synAiOut" };
+      const outEl = document.getElementById(outMap[kind]);
+      outEl.style.display = "block";
+      outEl.textContent = "⏳ Connecting to AI Reader for deep synthesis...";
+
+      const prompts = {
+        tarot: "You are an insightful modern Tarot reader. Synthesize the drawn spread cohesively into 3 concise sections: [1. Core Narrative], [2. Hidden Dynamics & Nuance], and [3. Practical Next Step].",
+        zodiac: "You are a warm, perceptive psychological astrologer. Based on the user's Big Three and Life Path number, provide 3 concise sections: [1. Core Archetype], [2. Current Growth Theme], and [3. Actionable Guidance].",
+        synastry: "You are an expert relationship astrologer. Analyze the two signs' elemental and modal interplay in 3 concise sections: [1. Magnetic Chemistry], [2. Friction Points to Navigate], and [3. How to Thrive Together]."
+      };
+
+      try {
+        const reply = await callGeminiText(apiKey, prompts[kind] + "\n\nReading Data:\n" + lastContext[kind]);
+        outEl.textContent = reply;
+        logMsg("AI reading complete (" + kind + ")");
+      } catch (e) {
+        outEl.textContent = "❌ AI Reading failed: " + e.message;
+        logMsg("AI reading failed: " + e.message);
+      }
+    }
+
+    function saveApiKey() {
+      const k = document.getElementById("aiApiKey").value.trim();
+      localStorage.setItem(STORAGE_KEY_API, k);
+      logMsg(k ? "API Key saved" : "API Key cleared");
+      alert(k ? "✅ Gemini API Key saved!" : "API Key cleared.");
+    }
+
+    function activateLicense() {
+      const k = document.getElementById("licInput").value.trim();
+      if (!k.startsWith("ARC1.") || k.length < 16) return alert("Invalid license format (expected ARC1.xxx).");
+      localStorage.setItem(STORAGE_KEY_LIC, k);
+      refreshLicenseUI();
+      alert("🎉 Lifetime Pro Edition unlocked!");
+    }
+
+    function refreshLicenseUI() {
+      const lic = localStorage.getItem(STORAGE_KEY_LIC);
+      document.getElementById("licenseBadge").innerText = (lic && lic.startsWith("ARC1.")) ? "Lifetime Pro · Unlocked" : "Full Offline Edition";
+    }
+
+    function renderCosmicBar() {
+      const now = new Date();
+      const sun = getZodiacByMonthDay(now.getMonth() + 1, now.getDate());
+      const moon = getMoonPhaseInfo(now);
+      document.getElementById("cosmicBar").innerHTML =
+        "🌌 <b>Today's Sky:</b> Sun in <b>" + sun.symbol + " " + sun.sign + "</b> (" + sun.element + ") &nbsp;|&nbsp; " +
+        "<b>Lunar Phase:</b> " + moon.name + " (" + moon.illum + "% illuminated)";
+    }
+
+    (function boot() {
+      const savedKey = localStorage.getItem(STORAGE_KEY_API);
+      if (savedKey) document.getElementById("aiApiKey").value = savedKey;
+      refreshLicenseUI();
+      renderCosmicBar();
+      logMsg("Arcana & Astro Studio v1.0.0 ready (78-Card Tarot + 12 Zodiacs + Synastry + Numerology)");
+    })();
+  </script>
+</body>
+</html>
+
