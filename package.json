@@ -1,9 +1,12 @@
 {
   "name": "arcana-astro-studio",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": true,
-  "description": "Arcana & Astro Studio — 100% Offline 78-Card Tarot, Zodiac Horoscope & Synastry",
+  "description": "Arcana & Astro Studio — Offline VSOP87 Astronomical Ephemeris & A.E. Waite 78-Card Tarot",
+  "dependencies": {
+    "astronomy-engine": "^2.1.19"
+  },
   "scripts": {
-    "build": "echo 'Static web assets ready in www/'"
+    "prepare-vendor": "mkdir -p www/vendor && cp node_modules/astronomy-engine/astronomy.browser.min.js www/vendor/astronomy.browser.min.js"
   }
 }
